@@ -23,7 +23,8 @@ RUN curl -L https://github.com/cram2/cognitive_robot_abstract_machine/archive/re
     -o /tmp/krrood.zip \
     && unzip /tmp/krrood.zip -d /home/${NB_USER}/ \
     && mv /home/${NB_USER}/cognitive_robot_abstract_machine-main /home/${NB_USER}/krrood \
-    && rm /tmp/krrood.zip
+    && rm /tmp/krrood.zip \
+    && pip install --no-cache-dir --force-reinstall --no-deps -e /home/${NB_USER}/krrood/krrood
 RUN pip install --no-cache-dir sqlalchemy pytest pandas matplotlib mujoco
 
 # ROS2-Abhängigkeiten auflösen und den Workspace bauen
