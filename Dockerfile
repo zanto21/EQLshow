@@ -14,10 +14,16 @@ RUN git config --global --add safe.directory ${ROS_WS}/src/pycram
 
 RUN pip install --no-cache-dir -e ${ROS_WS}/src/pycram
 
+USER root
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
+USER ${NB_USER}
+
 # krrood (Entity Query Language + EQL-zu-SQL-Übersetzer) installieren
-RUN git clone --depth 1 https://github.com/cram2/cognitive_robot_abstract_machine.git /home/${NB_USER}/krrood
-RUN pip install --no-cache-dir -e /home/${NB_USER}/krrood/krrood
-RUN pip install --no-cache-dir -e /home/${NB_USER}/krrood/giskardpy
+RUN curl -L https://github.com/cram2/cognitive_robot_abstract_machine/archive/refs/heads/main.zip \
+    -o /tmp/krrood.zip \
+    && unzip /tmp/krrood.zip -d /home/${NB_USER}/ \
+    && mv /home/${NB_USER}/cognitive_robot_abstract_machine-main /home/${NB_USER}/krrood \
+    && rm /tmp/krrood.zip
 RUN pip install --no-cache-dir sqlalchemy pytest pandas matplotlib mujoco
 
 # ROS2-Abhängigkeiten auflösen und den Workspace bauen
