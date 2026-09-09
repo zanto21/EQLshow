@@ -1,178 +1,66 @@
-# ROS2 in JupyterLab docker image
+# EQL in SQL Übersetzen — Interaktive Demo
 
-[![](https://img.shields.io/docker/v/intel4coro/jupyter-ros2.svg)](https://hub.docker.com/r/intel4coro/jupyter-ros2/tags)
-[![Binder](https://binder.intel4coro.de/badge_logo.svg)](https://binder.intel4coro.de/v2/gh/IntEL4CoRo/jupyter-ros2.git/HEAD)
+Dieses Repository enthält eine interaktive Jupyter-Notebook-Demo zur Bachelorarbeit
+*EQL in SQL Übersetzen*. Die Umgebung basiert auf `intel4coro/jupyter-ros2:jazzy-py3.12`
+und bringt ROS2 Jazzy sowie pycram bereits vorinstalliert mit.
 
-This is a template repository to build ROS2 applications capable to run on BinderHub/Docker. The default installed distribution is [jazzy Hawksbill](https://docs.ros.org/en/jazzy/index.html), which is a long-term support (LTS) release that will be supported until May 2029. To install a newer or development [distribution](https://docs.ros.org/en/jazzy/Releases.html), change the variable `$ROS_DISTRO` in [Dockerfile](./Dockerfile).
+## Was zeigt die Demo?
 
-You can use this repository to do following (and more):
+- Live-Übersetzung von EQL-Ausdrücken in SQL, inklusive der Beispiele aus der
+  Bachelorarbeit (einfacher Filter, transitiver Attributzugriff, Multi-Variable-Join,
+  Sortierung und Limit)
+- Verifikation, dass EQL-Auswertung und SQL-Auswertung dasselbe Ergebnis liefern
+  (analog zur Teststrategie aus Abschnitt 5.9 der Arbeit)
+- Ein interaktives Dropdown-Menü, mit dem verschiedene EQL-Beispiele ausgewählt
+  werden können, jeweils mit live berechnetem SQL und den zugehörigen Metriken
+- Ein zusammenfassendes Diagramm, das die Kognitive Komplexität (Campbell, 2018)
+  und weitere Metriken aus Kapitel 6 der Arbeit live aus den generierten
+  Übersetzungen berechnet und visualisiert
+- Ein abschließendes Fazit, das die Ergebnisse mit der Bachelorarbeit verknüpft
 
-- Learn the [ROS2 tutorials](https://docs.ros.org/en/jazzy/Tutorials.html) without installing anything.
-- Quickly start a ROS2 environment in a local Docker container regardless of your operating system.
-- Starting to migrate projects from ROS1 to ROS2.
-- Create live demos for your ROS2 applications.
+## Struktur
 
-## Quick Start
+```
+Dockerfile               # Erweitert intel4coro/jupyter-ros2 um pycram + krrood
+docker-compose.yml       # Lokales Docker-Compose-Setup
+entrypoint.sh            # Sourced ROS2- und Workspace-Umgebung beim Containerstart
+notebooks/
+  eql_demo.ipynb           # Die interaktive Demo
+  eql_metrics.py            # Reine Metrikfunktionen aus test_eql_readability.py,
+                             # ohne pytest-Abhängigkeiten, direkt importierbar
+```
 
-### Get started with ROS2 tutorials
+## Auf BinderHub starten
 
-- Try [ROS2 jazzy tutorials](https://docs.ros.org/en/jazzy/Tutorials.html) on BinderHub: [![Binder](https://binder.intel4coro.de/badge_logo.svg)](https://binder.intel4coro.de/v2/gh/IntEL4CoRo/jupyter-ros2/HEAD?labpath=tutorials%2FTurtlesim.ipynb)
+Diese Demo läuft auf der Cloud-based Robotics Platform der Universität Bremen:
+[https://binder.intel4coro.de/](https://binder.intel4coro.de/)
 
-- Start the "VNC Desktop" in the JupyterLab Launcher to initiate the virtual display before you run GUI applications.
-- Open new launchers tab to start terminals.
-- Arrange tabs by dragging.
-- Most of the installation steps in the tutorials can be skipped.
+Repository-URL beim Start angeben:
+```
+https://github.com/zanto21/EQLshow
+```
 
-
-### Start a ROS2 environment locally
-
-To connect to real robots or run computate intense robot simulators, you need to run docker container on your local machine.
-A ready-to-run docker image `intel4coro/jupyter-ros2:jazzy-py3.12` is pushed to [DockerHub](https://hub.docker.com/r/intel4coro/jupyter-ros2/tags).
-
-#### Prerequisites
-
-- [Docker Engine](https://docs.docker.com/engine/install/)
-- [Ubuntu](https://releases.ubuntu.com/) (Tested with Ubuntu 20.04)
-- Nvidia Graphic Card and [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) (Optional but recommended)
-
-#### Start Docker container
+## Lokal starten (mit Docker)
 
 ```bash
-docker run --rm -p 8888:8888 intel4coro/jupyter-ros2:jazzy-py3.12 jupyter lab --NotebookApp.token=''
+docker compose up --build
 ```
 
-Open url http://localhost:8888/
+Danach im Browser `http://localhost:8888` öffnen (kein Token/Passwort nötig).
 
-#### Start Docker container with GPU enabled
+## Hinweis zu eql_metrics.py
 
-```bash
-xhost +local:docker && \
-docker run --rm -p 8888:8888 \
--v /tmp/.X11-unix:/tmp/.X11-unix:rw \
---env DISPLAY=$DISPLAY \
---env NVIDIA_DRIVER_CAPABILITIES=all \
---gpus all intel4coro/jupyter-ros2:jazzy-py3.12 && \
-xhost -local:docker
-```
+`eql_metrics.py` ist ein bewusst schlanker Auszug aus
+`test/krrood_test/test_ormatic/test_eql_readability.py`. Die dortigen `test_*`-Funktionen
+benötigen pytest-Fixtures (insbesondere `session` aus `conftest.py`) und sind daher nicht
+direkt in einem Notebook lauffähig. `eql_metrics.py` enthält nur die neun reinen
+Metrikfunktionen (Zeichenlänge, technischer Lärm, Domänen-Transparenz, Verschachtelungstiefe,
+Halstead-Volumen, Abstraktionsverhältnis, Fremdschlüssel-Fehleranfälligkeit, extrinsische
+kognitive Last, kognitive Komplexität) sowie die `analyze()`-Hilfsfunktion.
 
-Recommended to start with docker-compose if having many custom configurations Example: [docker-compose.yml](./docker-compose.yml).
+## Hintergrund
 
-## Create your ROS2 application live demo
-
-You can start a ROS2 project from scratch with this template repository, or create your own ROS2 environment by extending the image `intel4coro/jupyter-ros2:jazzy-py3.12`, all you need is to create a `Dockerfile` under the root path or directory `binder/` in your git repository. Extending the pre-built image can save a huge amount of time from installing software dependencies.
-
-### Dockerfile Example
-
-```Dockerfile
-FROM intel4coro/jupyter-ros2:jazzy-py3.12
-
-# Run bash commands required root permission
-USER root
-RUN apt update && apt install nano vim
-USER ${NB_USER}
-
-# Define environment variables
-ENV ROS_WS=/home/${NB_USER}/my_ros2_ws
-
-# Create your ROS workspace
-RUN mkdir -p ${ROS_WS}/src
-# Change working directory (similar to command "cd")
-WORKDIR ${ROS_WS}
-# Copy files from your git repo to ROS workspace
-COPY --chown=${NB_USER}:users src src/my-repo-name
-
-# Install ROS packages dependencies
-USER root
-RUN rosdep update && apt update && \
-    rosdep install --from-paths src --ignore-src -r -y && \
-    rosdep fix-permissions
-
-# Build ROS workspace
-USER ${NB_USER}
-RUN colcon build --parallel-workers 4
-# Source ROS workspace in new bash terminals
-RUN echo "source ${ROS_WS}/install/setup.bash" >> /home/${NB_USER}/.bashrc
-
-# Override the entrypoint to add startup scripts
-# Note: Do not forget to add `exec "$@"` at the end of your entrypoint.
-COPY --chown=${NB_USER}:users entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
-```
-
-## Software components
-
-- [ros-jazzy-desktop](https://docs.ros.org/en/jazzy/index.html): Desktop install of ROS2 jazzy with RViz, demos, tutorials.
-- [Jupyterlab](https://github.com/jupyterlab/jupyterlab): Web-based integrated development environment (IDE)
-- [VNC Remote Desktop](https://github.com/jupyterhub/jupyter-remote-desktop-proxy): Run XFCE (or other desktop environments) on Jupyter.
-
-## Development
-
-Update the [Dockerfile](./Dockerfile) to make further changes to the docker image, for example, changing the ROS distribution or removing packages that you don't need. The config of running the docker image on your machine locally is specify in [docker-compose.yml](./docker-compose.yml).
-
-### Checkout git submodules
-
-```bash
-git submodule update --init
-```
-
-### Run Image Locally (Under repo directory)
-
-- Run Docker image
-
-  ```bash
-  docker compose up
-  ```
-
-- Open url http://localhost:8888/
-
-- Force image rebuild after updating the [Dockerfile](./Dockerfile)
-
-  ```bash
-  docker compose up -d --build 
-  ```
-
-#### Enable nvidia GPU and display GUI applications on host machine
-
-To display GUI applications on your host machine instead of a virtual display.
-Uncomment the following configs in [docker-compose.yml](./docker-compose.yml)
-
-```docker-compose
-    #   - /tmp/.X11-unix:/tmp/.X11-unix:rw
-    # environment:
-    #   - DISPLAY
-    #   - NVIDIA_DRIVER_CAPABILITIES=all
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
-```
-
-and run `docker compose up` with X-forwarding:
-
-```bash
-xhost +local:docker && \
-docker compose up && \
-xhost -local:docker
-```
-
-## Troubleshooting
-
-1. JupyterLab instance crashed when running `colcon build`
-  
-    Limit the number of building threads like this: `colcon build --parallel-workers 2`
-
-## License
-
-Copyright 2023 IntEL4CoRo\<forcoro@uni-bremen.de\>
-
-This repository is released under the Apache License 2.0, see [LICENSE](./LICENSE).  
-Unless attributed otherwise, everything in this repository is under the Apache License 2.0.
-
-### Acknowledgements
-
-This Docker image is based on [jupyter/docker-stacks](https://github.com/jupyter/docker-stacks), licensed under the [BSD License](https://github.com/jupyter/docker-stacks/blob/main/LICENSE.md).
-
-Gazebo example referneces [Tiryoh/docker-ros2-desktop-vnc](https://github.com/Tiryoh/docker-ros2-desktop-vnc), licensed under the [Apache License 2.0](https://github.com/Tiryoh/docker-ros2-desktop-vnc/blob/master/LICENSE).
+Der EQL-zu-SQL-Übersetzer stammt aus dem Projekt
+[cognitive_robot_abstract_machine](https://github.com/cram2/cognitive_robot_abstract_machine)
+(krrood). Die vollständige wissenschaftliche Auswertung und Methodik ist in der
+zugehörigen Bachelorarbeit beschrieben (siehe `main.pdf` im Repository-Root).
