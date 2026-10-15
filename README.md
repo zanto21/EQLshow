@@ -1,66 +1,62 @@
-# EQL in SQL Übersetzen — Interaktive Demo
+# EQL in SQL übersetzen – Notebooks zur Bachelorarbeit
 
-Dieses Repository enthält eine interaktive Jupyter-Notebook-Demo zur Bachelorarbeit
-*EQL in SQL Übersetzen*. Die Umgebung basiert auf `intel4coro/jupyter-ros2:jazzy-py3.12`
-und bringt ROS2 Jazzy sowie pycram bereits vorinstalliert mit.
+Dieses Repository enthält die Jupyter-Notebooks zur Bachelorarbeit
+*EQL in SQL übersetzen*. Mit ihnen lassen sich die Ergebnisse der Evaluation
+(Kapitel 6 der Arbeit) neu erzeugen, und EQL lässt sich auf der Datenbank eines
+aufgezeichneten Roboterplans ausprobieren (Kapitel 7, Abschnitt „Notebooks zum
+Nachvollziehen der Ergebnisse“).
 
-## Was zeigt die Demo?
+Die Umgebung basiert auf `intel4coro/jupyter-ros2:jazzy-py3.12` und installiert
+pycram sowie krrood (mit dem EQL-zu-SQL-Übersetzer) aus
+[cognitive_robot_abstract_machine](https://github.com/cram2/cognitive_robot_abstract_machine).
 
-- Live-Übersetzung von EQL-Ausdrücken in SQL, inklusive der Beispiele aus der
-  Bachelorarbeit (einfacher Filter, transitiver Attributzugriff, Multi-Variable-Join,
-  Sortierung und Limit)
-- Verifikation, dass EQL-Auswertung und SQL-Auswertung dasselbe Ergebnis liefern
-  (analog zur Teststrategie aus Abschnitt 5.9 der Arbeit)
-- Ein interaktives Dropdown-Menü, mit dem verschiedene EQL-Beispiele ausgewählt
-  werden können, jeweils mit live berechnetem SQL und den zugehörigen Metriken
-- Ein zusammenfassendes Diagramm, das die Kognitive Komplexität (Campbell, 2018)
-  und weitere Metriken aus Kapitel 6 der Arbeit live aus den generierten
-  Übersetzungen berechnet und visualisiert
-- Ein abschließendes Fazit, das die Ergebnisse mit der Bachelorarbeit verknüpft
+## Im Browser starten (BinderHub)
 
-## Struktur
+[https://binder.intel4coro.de/v2/gh/zanto21/EQLshow/HEAD](https://binder.intel4coro.de/v2/gh/zanto21/EQLshow/HEAD)
 
-```
-Dockerfile               # Erweitert intel4coro/jupyter-ros2 um pycram + krrood
-docker-compose.yml       # Lokales Docker-Compose-Setup
-entrypoint.sh            # Sourced ROS2- und Workspace-Umgebung beim Containerstart
-notebooks/
-  eql_demo.ipynb           # Die interaktive Demo
-  eql_metrics.py            # Reine Metrikfunktionen aus test_eql_readability.py,
-                             # ohne pytest-Abhängigkeiten, direkt importierbar
-```
+Der erste Start baut das Image und kann einige Minuten dauern.
 
-## Auf BinderHub starten
+## Notebooks
 
-Diese Demo läuft auf der Cloud-based Robotics Platform der Universität Bremen:
-[https://binder.intel4coro.de/](https://binder.intel4coro.de/)
+Alle Notebooks liegen in `tutorials/`.
 
-Repository-URL beim Start angeben:
-```
-https://github.com/zanto21/EQLshow
-```
+| Notebook | Inhalt |
+|---|---|
+| `metrics_evaluation.ipynb` | Übersetzt die sechs Abfragen der Evaluation, zeigt EQL, generiertes und handgeschriebenes SQL nebeneinander und erzeugt alle Ergebnistabellen der Arbeit (Metriken, Übersetzer-Overhead, Skalierung, Feature-Tabelle). Jede handgeschriebene Abfrage wird einmal gegen die Testdatenbank ausgeführt. |
+| `metrics_data_setup.ipynb` | Baut die Testdatenbank und die Beispielwelten auf; wird von `metrics_evaluation.ipynb` per `%run` eingebunden. |
+| `plan_db_create.ipynb` | Führt einen Roboterplan in der Simulation aus und speichert ihn als SQLite-Datenbank (`plan_result_rich.sqlite`). |
+| `plan_db_queries.ipynb` | Stellt EQL-Abfragen an diese Plan-Datenbank und zeigt jeweils EQL, generiertes SQL und Ergebnis. Am Ende ist Platz für eigene Abfragen. |
 
-## Lokal starten (mit Docker)
+`eql_metrics.py` enthält die Metrikfunktionen (Zeichenlänge, technischer Lärm,
+Domänen-Transparenz, Verschachtelungstiefe, Halstead-Volumen,
+Fremdschlüssel-Fehleranfälligkeit, extrinsische Last, kognitive Komplexität),
+die EQL-Quelltexte und handgeschriebenen SQL-Abfragen der sechs Queries sowie
+die Feature-Tabelle. Die Zählregeln sind im Anhang der Arbeit beschrieben.
+
+**Reihenfolge:**
+
+1. Evaluation: `metrics_evaluation.ipynb` ausführen (lädt `metrics_data_setup.ipynb` selbst).
+2. Plan-Datenbank: erst `plan_db_create.ipynb`, dann `plan_db_queries.ipynb`.
+
+`plan_db_queries.ipynb` braucht einen eigenen Kernel (bzw. einen Kernel-Neustart
+nach `metrics_evaluation.ipynb`): Die ORM-Klassen der Plan-Datenbank und die
+Testklassen der Evaluation registrieren Tabellen in denselben
+SQLAlchemy-Metadaten und lassen sich nicht im selben Kernel laden.
+
+## Lokal starten (Docker)
 
 ```bash
 docker compose up --build
 ```
 
-Danach im Browser `http://localhost:8888` öffnen (kein Token/Passwort nötig).
+Danach `http://localhost:8888` im Browser öffnen (kein Token nötig).
 
-## Hinweis zu eql_metrics.py
+## Struktur
 
-`eql_metrics.py` ist ein bewusst schlanker Auszug aus
-`test/krrood_test/test_ormatic/test_eql_readability.py`. Die dortigen `test_*`-Funktionen
-benötigen pytest-Fixtures (insbesondere `session` aus `conftest.py`) und sind daher nicht
-direkt in einem Notebook lauffähig. `eql_metrics.py` enthält nur die neun reinen
-Metrikfunktionen (Zeichenlänge, technischer Lärm, Domänen-Transparenz, Verschachtelungstiefe,
-Halstead-Volumen, Abstraktionsverhältnis, Fremdschlüssel-Fehleranfälligkeit, extrinsische
-kognitive Last, kognitive Komplexität) sowie die `analyze()`-Hilfsfunktion.
-
-## Hintergrund
-
-Der EQL-zu-SQL-Übersetzer stammt aus dem Projekt
-[cognitive_robot_abstract_machine](https://github.com/cram2/cognitive_robot_abstract_machine)
-(krrood). Die vollständige wissenschaftliche Auswertung und Methodik ist in der
-zugehörigen Bachelorarbeit beschrieben (siehe `main.pdf` im Repository-Root).
+```
+Dockerfile           Image auf Basis von intel4coro/jupyter-ros2 mit pycram und krrood
+docker-compose.yml   Lokales Docker-Setup
+entrypoint.sh        Lädt die ROS2- und Workspace-Umgebung beim Containerstart
+scripts/             Hilfsskripte, die beim Bauen des Images Import-Probleme beheben
+tutorials/           Notebooks und eql_metrics.py
+```
